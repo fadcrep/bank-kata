@@ -1,7 +1,7 @@
 # Bank account kata
-Think of your personal bank account experience When in doubt, go for the simplest solution
+ Think of your personal bank account experience When in doubt, go for the simplest solution
 
-[Subject](https://gist.github.com/abachar/d20bdcd07dac589feef8ef21b487648c)
+ Subject Link https://gist.github.com/abachar/d20bdcd07dac589feef8ef21b487648c
 
 # Bank account kata Solution Proposition
 
@@ -27,11 +27,12 @@ mvn spring-boot:run
 
 In the db we have 2 Accounts with id 1 and 2 et no operation
 
+![img.png](img.png)
+
 ### Api documentation
 
-* The api documentation is available [here](http://localhost:8080/sg-bank/api/v1/swagger-ui/) at application start up
+* The api documentation is available here http://localhost:8080/sg-bank/api/v1/swagger-ui/ at application start up
 
-![img.png](img.png)
 
 ### Query the api
 
