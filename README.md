@@ -10,6 +10,7 @@
 ### dependencies
 
 * [java](https://java.com/fr/download/help/download_options.html) (v11)
+* Spring Boot v:2.6.7
 
 ### Start the project
 
