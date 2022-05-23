@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="fr"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OperationService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">bank</a> &gt; <a href="index.source.html" class="el_package">com.fadtech.bank.service</a> &gt; <span class="el_source">OperationService.java</span></div><h1>OperationService.java</h1><pre class="source lang-java linenums">package com.fadtech.bank.service;
+
+import com.fadtech.bank.exception.AccountNotFoundException;
+import com.fadtech.bank.exception.InsufficientFundException;
+import com.fadtech.bank.model.Account;
+import com.fadtech.bank.model.Amount;
+import com.fadtech.bank.model.Operation;
+import com.fadtech.bank.model.OperationType;
+import com.fadtech.bank.repository.AccountRepository;
+import com.fadtech.bank.repository.OperationRepository;
+import com.fadtech.bank.repository.entity.AccountEntity;
+import com.fadtech.bank.repository.entity.OperationEntity;
+import com.fadtech.bank.service.mapper.fromdb.AccountMapperFromDb;
+import com.fadtech.bank.service.mapper.fromdb.OperationMapperFromDb;
+import com.fadtech.bank.service.mapper.todb.AccountMapperToDb;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.Collections;
+import java.util.List;
+
+import static com.fadtech.bank.model.OperationType.DEPOSIT;
+import static com.fadtech.bank.model.OperationType.WITHDRAWAL;
+import static com.fadtech.bank.utils.Message.ACCOUNT_NOT_FOUND_ERROR_MESSAGE;
+import static com.fadtech.bank.utils.Message.INSUFFICIENT_FUNDS_ERROR_MESSAGE;
+import static java.math.BigDecimal.ZERO;
+import static java.util.Collections.reverseOrder;
+
+
+/**
+ * The Class OperationService
+ * description: this class is responsible for the business logic of the operation
+ */
+
+@Service
+<span class="nc" id="L41">@Setter</span>
+<span class="nc" id="L42">@NoArgsConstructor</span>
+<span class="fc" id="L43">@AllArgsConstructor</span>
+public class OperationService {
+
+    @Autowired
+    private AccountRepository accountRepository;
+
+    @Autowired
+    private OperationRepository operationRepository;
+
+    /**
+     * @param accountId
+     * @param operationAmount
+     * @return
+     * @throws AccountNotFoundException
+     * @throws InsufficientFundException
+     */
+    public Operation withdrawal(Long accountId, Amount operationAmount) throws AccountNotFoundException,
+            InsufficientFundException {
+
+        // 1- Check if account exist and balance allow the operation
+<span class="fc" id="L63">        Account account = validateWithdraw(accountId, operationAmount);</span>
+
+        // 2- Create the operation to save
+<span class="fc" id="L66">        OperationEntity operationEntityToBeSaved =</span>
+<span class="fc" id="L67">                buildWithDrawOperation(operationAmount, account);</span>
+
+        // 3- Save the operation into DB
+<span class="fc" id="L70">        OperationEntity operationEntitySaved = operationRepository.save(operationEntityToBeSaved);</span>
+
+        // 4- Mapping from db
+<span class="fc" id="L73">        Operation operationSaved = OperationMapperFromDb.INSTANCE.mapOne(operationEntitySaved);</span>
+
+        // 5- Update Balance
+<span class="fc" id="L76">        Account accountSaved = updateBalance(account, operationSaved);</span>
+
+        //6- set the new Account information
+<span class="fc" id="L79">        operationSaved.setAccount(accountSaved);</span>
+
+<span class="fc" id="L81">        return operationSaved;</span>
+    }
+
+    /**
+     * @param accountId
+     * @param operationAmount
+     * @return
+     * @throws AccountNotFoundException
+     * @throws InsufficientFundException
+     */
+    public Operation deposit(Long accountId, Amount operationAmount) throws AccountNotFoundException,
+            InsufficientFundException {
+        // 1- Check if account exist and balance allow the operation
+<span class="fc" id="L94">        Account account = validateDeposit(accountId);</span>
+
+        // 2- Create the operation to save
+<span class="fc" id="L97">        OperationEntity operationEntityToBeSaved =</span>
+<span class="fc" id="L98">                buildDepositOperation(operationAmount, account);</span>
+
+        // 3- Save the operation into DB
+<span class="fc" id="L101">        OperationEntity operationEntitySaved = operationRepository.save(operationEntityToBeSaved);</span>
+
+        // 4- Mapping from db
+<span class="fc" id="L104">        Operation operationSaved = OperationMapperFromDb.INSTANCE.mapOne(operationEntitySaved);</span>
+
+        // 5- Update Balance
+<span class="fc" id="L107">        Account accountSaved = updateBalance(account, operationSaved);</span>
+
+        //6- set the new Account information
+<span class="fc" id="L110">        operationSaved.setAccount(accountSaved);</span>
+
+<span class="fc" id="L112">        return operationSaved;</span>
+    }
+
+    /**
+     * @param accountId
+     * @return
+     * @throws AccountNotFoundException
+     */
+    public List&lt;Operation&gt; getOperationsByAccountId(Long accountId) throws AccountNotFoundException {
+<span class="nc" id="L121">        Account account = getAccountById(accountId);</span>
+<span class="nc" id="L122">        List&lt;OperationEntity&gt; operationEntities = (List&lt;OperationEntity&gt;) operationRepository.findAllByAccountId(accountId);</span>
+<span class="nc" id="L123">        List&lt;Operation&gt; operations = OperationMapperFromDb.INSTANCE.mapMany(operationEntities);</span>
+<span class="nc" id="L124">        Collections.sort(operations, reverseOrder());</span>
+<span class="nc" id="L125">        return operations;</span>
+    }
+
+    /**
+     * Update the account balance
+     *
+     * @param account   Account on which we operate
+     * @param operation the operation : withdrawal or deposit
+     */
+    Account updateBalance(Account account, Operation operation) {
+        // 1- retrieve the most recent operation
+<span class="fc" id="L136">        OperationEntity previousOperation = operationRepository.findFirstBefore(operation.getId());</span>
+
+        // 2-  get the previous balance from the last operation
+<span class="pc bpc" id="L139" title="1 of 2 branches missed.">        BigDecimal previousBalance = previousOperation == null ? ZERO : previousOperation.getBalance();</span>
+
+        // 3- calculate the new balance
+<span class="fc" id="L142">        BigDecimal newBalance = calculateBalance(operation.getType(), previousBalance, operation.getAmount());</span>
+
+        // 4- Update the account balance
+<span class="fc" id="L145">        account.setBalance(newBalance);</span>
+
+        // 5- set Date of balance
+<span class="fc" id="L148">        account.setDateOfBalance(Instant.now());</span>
+
+        // 6- Mapping to db
+<span class="fc" id="L151">        AccountEntity accountEntity = AccountMapperToDb.INSTANCE.mapOne(account);</span>
+
+        // 7- Persist into db
+<span class="fc" id="L154">        return AccountMapperFromDb.INSTANCE.mapOne(accountRepository.save(accountEntity));</span>
+    }
+
+    /**
+     * Calculate the new Balance
+     *
+     * @param operationType   Type of the operation : withdraw or deposit
+     * @param previousBalance Balance of the previous operation
+     * @param operationAmount Our operation amount
+     * @return
+     */
+    BigDecimal calculateBalance(OperationType operationType, BigDecimal previousBalance, BigDecimal operationAmount) {
+<span class="pc bpc" id="L166" title="1 of 2 branches missed.">        if (DEPOSIT == operationType) {</span>
+<span class="nc" id="L167">            return previousBalance.add(operationAmount);</span>
+        } else {
+<span class="fc" id="L169">            return previousBalance.subtract(operationAmount);</span>
+        }
+    }
+
+    /**
+     * @param accountId
+     * @return
+     */
+    Account validateDeposit(Long accountId) throws AccountNotFoundException {
+<span class="fc" id="L178">        return getAccountById(accountId);</span>
+    }
+
+    /**
+     * @param accountId
+     * @param operationAmount
+     * @return
+     */
+    Account validateWithdraw(Long accountId, Amount operationAmount) {
+<span class="fc" id="L187">        Account account = getAccountById(accountId);</span>
+
+<span class="fc bfc" id="L189" title="All 2 branches covered.">        if (account.getBalance().subtract(operationAmount.getValue()).compareTo(ZERO) &lt; 0) {</span>
+<span class="fc" id="L190">            throw new InsufficientFundException(INSUFFICIENT_FUNDS_ERROR_MESSAGE);</span>
+        }
+
+<span class="fc" id="L193">        return account;</span>
+
+    }
+
+    /**
+     * @param accountId
+     * @return
+     */
+    private Account getAccountById(Long accountId) {
+<span class="fc" id="L202">        AccountEntity accountEntity = accountRepository.findById(accountId).orElseThrow(() -&gt;</span>
+<span class="fc" id="L203">                new AccountNotFoundException(ACCOUNT_NOT_FOUND_ERROR_MESSAGE));</span>
+
+<span class="fc" id="L205">        return AccountMapperFromDb.INSTANCE.mapOne(accountEntity);</span>
+    }
+
+    /**
+     * @param operationAmount
+     * @param account
+     * @return
+     */
+    private OperationEntity buildWithDrawOperation(Amount operationAmount, Account account) {
+<span class="fc" id="L214">        return OperationEntity.builder()</span>
+<span class="fc" id="L215">                .type(WITHDRAWAL)</span>
+<span class="fc" id="L216">                .amount(operationAmount.getValue())</span>
+<span class="fc" id="L217">                .date(Instant.now())</span>
+<span class="fc" id="L218">                .balance(account.getBalance().subtract(operationAmount.getValue()))</span>
+<span class="fc" id="L219">                .account(AccountMapperToDb.INSTANCE.mapOne(account))</span>
+<span class="fc" id="L220">                .build();</span>
+    }
+
+    /**
+     * @param operationAmount
+     * @param account
+     * @return
+     */
+    private OperationEntity buildDepositOperation(Amount operationAmount, Account account) {
+<span class="fc" id="L229">        return OperationEntity.builder()</span>
+<span class="fc" id="L230">                .type(DEPOSIT)</span>
+<span class="fc" id="L231">                .amount(operationAmount.getValue())</span>
+<span class="fc" id="L232">                .date(Instant.now())</span>
+<span class="fc" id="L233">                .balance(account.getBalance().add(operationAmount.getValue()))</span>
+<span class="fc" id="L234">                .account(AccountMapperToDb.INSTANCE.mapOne(account))</span>
+<span class="fc" id="L235">                .build();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

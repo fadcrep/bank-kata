@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="fr"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Operation.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">bank</a> &gt; <a href="index.source.html" class="el_package">com.fadtech.bank.model</a> &gt; <span class="el_source">Operation.java</span></div><h1>Operation.java</h1><pre class="source lang-java linenums">package com.fadtech.bank.model;
+
+import lombok.*;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+
+<span class="fc" id="L8">@AllArgsConstructor</span>
+<span class="nc" id="L9">@NoArgsConstructor</span>
+@Getter
+<span class="pc bnc" id="L11" title="All 54 branches missed.">@Data</span>
+<span class="pc" id="L12">@Builder</span>
+public class Operation implements Comparable&lt;Operation&gt; {
+<span class="fc" id="L14">    private Long id;</span>
+<span class="fc" id="L15">    private OperationType type;</span>
+<span class="fc" id="L16">    private BigDecimal amount;</span>
+<span class="fc" id="L17">    private Instant date;</span>
+<span class="fc" id="L18">    private BigDecimal balance;</span>
+<span class="fc" id="L19">    private Account account;</span>
+
+    @Override
+    public int compareTo(Operation otherOperation) {
+
+<span class="nc bnc" id="L24" title="All 2 branches missed.">        if (otherOperation == this) {</span>
+<span class="nc" id="L25">            return 0;</span>
+        }
+
+<span class="nc bnc" id="L28" title="All 2 branches missed.">        if (null == otherOperation) {</span>
+<span class="nc" id="L29">            return 1;</span>
+        }
+
+<span class="nc" id="L32">        Instant otherDate = otherOperation.getDate();</span>
+
+
+<span class="nc bnc" id="L35" title="All 2 branches missed.">        if (otherDate == date) {</span>
+<span class="nc" id="L36">            return 0;</span>
+        }
+
+<span class="nc bnc" id="L39" title="All 2 branches missed.">        if (null == date) {</span>
+<span class="nc" id="L40">            return -1;</span>
+        }
+
+<span class="nc bnc" id="L43" title="All 2 branches missed.">        if (null == otherDate) {</span>
+<span class="nc" id="L44">            return 1;</span>
+        }
+
+
+<span class="nc bnc" id="L48" title="All 2 branches missed.">        if (date.isBefore(otherDate)) {</span>
+<span class="nc" id="L49">            return -1;</span>
+        }
+
+<span class="nc" id="L52">        return 1;</span>
+
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>
